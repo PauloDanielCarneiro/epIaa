@@ -1,0 +1,184 @@
+package teste;
+
+import java.awt.Point;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Queue;
+import java.util.Set;
+import java.util.Stack;
+import java.io.BufferedReader;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
+import java.lang.String;
+import teste.Graph;
+
+public class App {
+    public static char[][] mapaChar;
+    public static void main(String[] args) throws IOException {
+        BufferedReader ler = ler(args[0]);
+        String linha = ler.readLine();
+        int linhas = Integer.parseInt(linha.split(" ")[0]);
+        int colunas = Integer.parseInt(linha.split(" ")[1]);
+        int numItens;
+        int contador = 0;
+        mapaChar = new char[linhas][colunas];
+
+        //monta mapa
+        for (linha = ler.readLine(); linha != null && contador < linhas; linha = ler.readLine()) {
+            mapaChar[contador] = linha.toCharArray();
+            contador++;
+        }
+
+        //define itens
+        
+        numItens = Integer.parseInt(linha);
+        int[][] itens = new int[numItens][4];
+        for (contador = 0, linha = ler.readLine(); linha != null && contador < numItens; linha = ler.readLine()) {
+            String[] item = linha.split(" ");
+            itens[contador][0] = Integer.parseInt(item[0]);
+            itens[contador][1] = Integer.parseInt(item[1]);
+            itens[contador][2] = Integer.parseInt(item[2]);
+            itens[contador][2] = Integer.parseInt(item[3]);
+            contador++;
+        }
+        //capacidade e posições
+        int capacidade = Integer.parseInt(linha);
+        String[] posicaoInicio = ler.readLine().split(" ");
+        String[] posicaoFim = ler.readLine().split(" ");
+        int posicaoInicioX = Integer.parseInt(posicaoInicio[0]);
+        int posicaoInicioY = Integer.parseInt(posicaoInicio[1]);
+        int posicaoFinalX = Integer.parseInt(posicaoFim[0]);
+        int posicaoFinalY = Integer.parseInt(posicaoFim[1]);
+
+        ler.close();
+
+
+    }
+
+    public static BufferedReader ler(String path) {
+        FileReader arq = null;
+        try {
+            arq = new FileReader(path);
+        } catch (FileNotFoundException e) {
+            System.err.printf("Erro ao abrir o arquivo\n", e.getMessage());
+            System.exit(0);
+        }
+        return new BufferedReader(arq);
+    }
+
+    private Graph createGrap(char[][] matrix) {
+        Graph g = new Graph();
+        for (int r = 0; r < matrix.length; r++) {
+            for (int c = 0; c < matrix[0].length; c++) {
+    
+                // skip this cells
+                if (!isFreeCell(matrix[r][c])) {
+                    continue;
+                }
+    
+                int id = createUniqueId(r, c);
+                if (matrix[r][c] == 'S') {
+                    startVertex = id;
+                } else if (matrix[r][c] == 'E') {
+                    endVertex = id;
+                }
+                createNeighbor(r, c, matrix, g);
+            }
+        }
+        return g;
+    }
+    
+    private void createNeighbor(final int r, final int c, final char[][] matrix2, final Graph g) {
+        for (int row = -1; row <= 1; row++) {
+            for (int col = -1; col <= 1; col++) {
+                // avoid the center cell
+                if (row ==0 && col == 0){
+                    continue;
+                }
+                // outside matrix
+                if ((0 > c + col) || (c + col >= matrix2[0].length) || (0 > r + row) || (r + row >= matrix2.length)) {
+                    continue;
+                }
+                char value = matrix2[r+row][c+col];
+                if (!isFreeCell(value)){
+                    continue;
+                }
+                int from = createUniqueId(r, c);
+                int to = createUniqueId(row+r, col+c);
+                g.addEdge(from, to);
+            }
+        }
+    
+    }
+    
+    private boolean isFreeCell(char value) {
+        return (value != '#' && value !='C');
+    }
+    
+    private int createUniqueId(int r, int c) {
+        return r * MAX_COL + c;
+    }
+
+    private void findSP(Graph g) {
+        if (g == null || g.size() == 0) {
+            throw new IllegalArgumentException("empty or null graph");
+        }
+    
+        if (g.size() == 1) {
+            throw new IllegalArgumentException(
+                    "graph's size must be greater than 1");
+        }
+    
+        if (startVertex == -1) {
+            throw new IllegalArgumentException("Start vertex not found");
+        }
+    
+        if (endVertex == -1) {
+            throw new IllegalArgumentException("End vertex not found");
+        }
+    
+        Map<Integer, Integer> sonToParent = bfs(g, startVertex, endVertex);
+    
+        Stack<Integer> path = new Stack<Integer>();
+        for (int son = endVertex; son!= startVertex; son = sonToParent.get(son)){
+            path.push(son);
+        }
+    
+        path.push(startVertex);
+        while (!path.isEmpty()){
+            System.out.print(path.pop() + ", ");
+        }
+    }
+    
+    private Map<Integer, Integer> bfs(Graph g, int startVertex2, int endVertex2) {
+        Queue<Integer> q = new LinkedList<Integer>();
+        Set<Integer> marked = new HashSet<Integer>();
+        Map<Integer, Integer> sonToParent = new HashMap<Integer, Integer>();
+        q.add(startVertex2);
+        while (!q.isEmpty()) {
+            int v = q.poll();
+            for (Integer s : g.adj(v)) {
+                if (!marked.contains(s)) {
+                    marked.add(s);
+                    sonToParent.put(s, v);
+    
+                    if (s == endVertex2) {
+                        return sonToParent;
+                    }
+    
+                    q.add(s);
+                }
+            }
+    
+        }
+        return null;
+    }
+}
